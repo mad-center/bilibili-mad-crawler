@@ -56,11 +56,7 @@ def request_headers(random_ua=True):
 
 def upsert_to_db(data):
     if data:
-        print('count={0}, num={1}, size={2}, archives size={3}'
-              .format(data['page']['count'], data['page']['num'], data['page']['size'], len(data["archives"])))
-
         mads = data['archives']
-
         if len(mads) > 0:
             operations = []
             for idx, mad in enumerate(mads):
@@ -114,11 +110,9 @@ def mad_crawler_page():
     """
     情况分析：
 
-    1. 数据库访问失败。返回None。
-
-    2. 数据库访问成功，但是没有查询到doc，代表还没有初始化。直接返回1。
-
-    3. 数据库访问成功，查询到doc，返回doc中的page字段。
+    >>> 1. 数据库访问失败。返回None。
+    >>> 2. 数据库访问成功，但是没有查询到doc，代表还没有初始化。直接返回0。
+    >>> 3. 数据库访问成功，查询到doc，返回doc中的page字段。
     Returns
     -------
 
@@ -146,10 +140,9 @@ def upsert_mad_crawler_page():
             },
             upsert=True
         )
-
         return res
     except Exception as e:
-        pprint('ERROR: update page failed', e)
+        print('ERROR: update page failed', e)
         return None
 
 
@@ -177,11 +170,15 @@ def crawl():
 
         # todo retry logic
         if data:
+            print('count={0}, num={1}, size={2}, archives len={3}'
+                  .format(data['page']['count'], data['page']['num'], data['page']['size'], len(data["archives"])))
+
+            # do better: the all below ops should be wrapped by transaction
             # upsert mad
             upsert_to_db(data)
             # upsert crawler progress: next_page
             upsert_mad_crawler_page()
-            print('crawl page {0} done. now update page to {0}'.format(i, i))
+            print('crawl page {0} done. And update page to {0}'.format(i, i))
             # wait
             time.sleep(3)
         else:
@@ -190,7 +187,7 @@ def crawl():
 
         print('end crawl page ' + str(i) + ('=' * 50))
         if should_break:
-            break;
+            break
 
 
 if __name__ == '__main__':

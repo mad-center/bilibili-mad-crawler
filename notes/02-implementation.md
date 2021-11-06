@@ -40,8 +40,12 @@ trusted-host=mirrors.aliyun.com
 
 ## 在开始测试python代码之前
 
+### 如果你使用的是v2Ray
 如果本地编程环境中使用了一些代理软件，例如v2Ray全局代理设置。请务必排除bilibili相关URL。
 ![](./assets/exclude-bilibili-on-v2ray.png)
+
+### 如果你使用的是clash
+![](./assets/set-proxy-in-widows10.png)
 
 ## 代码测试 PyMongo
 
