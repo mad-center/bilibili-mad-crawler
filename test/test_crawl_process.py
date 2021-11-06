@@ -1,11 +1,9 @@
 import math
 import time
-
-from datetime import datetime
-
 import pymongo
 import requests
 
+from datetime import datetime
 from fake_useragent import UserAgent
 from pymongo import UpdateOne
 
@@ -13,7 +11,7 @@ conn_str = "mongodb://127.0.0.1:27017/test"
 client = pymongo.MongoClient(conn_str, serverSelectionTimeoutMS=5000)
 db = client['test']
 mad_collection = db['mad']
-next_page_collection = db['mad_crawler_next_page']
+page_collection = db['mad_crawler_page']
 
 
 def mad_estimate_count():
@@ -112,7 +110,7 @@ def page_url(pn=1, ps=20):
     return url
 
 
-def mad_crawler_next_page():
+def mad_crawler_page():
     """
     情况分析：
 
@@ -120,29 +118,30 @@ def mad_crawler_next_page():
 
     2. 数据库访问成功，但是没有查询到doc，代表还没有初始化。直接返回1。
 
-    3. 数据库访问成功，查询到doc，返回doc中的next_page字段。
+    3. 数据库访问成功，查询到doc，返回doc中的page字段。
     Returns
     -------
 
     """
     try:
-        doc = next_page_collection.find_one()
+        doc = page_collection.find_one()
         if doc:
-            return doc['next_page']
+            return doc['page']
         else:
-            return 1
+            # 0 is initial page number
+            return 0
     except Exception as e:
         print('ERROR: get next_page failed. MUST stop.')
         return None
 
 
-def upsert_mad_crawler_next_page():
+def upsert_mad_crawler_page():
     try:
         # find_one_and_update() Returns ``None`` if no document matches the filter.
-        res = next_page_collection.find_one_and_update(
+        res = page_collection.find_one_and_update(
             {},
             {
-                '$inc': {'next_page': 1},
+                '$inc': {'page': 1},
                 '$set': {'last_update': datetime.now()}
             },
             upsert=True
@@ -150,40 +149,48 @@ def upsert_mad_crawler_next_page():
 
         return res
     except Exception as e:
-        pprint('ERROR: update next_page failed', e)
+        pprint('ERROR: update page failed', e)
         return None
 
 
 def crawl():
-    ps = 20
+    ps = 50
 
     print('prepare begin' + ('=' * 50))
     # compute next_page and end_page_number
-    next_page = mad_crawler_next_page()
+    page = mad_crawler_page()
     current_count = mad_estimate_count()
-    # page_count = math.ceil(current_count / ps)
-    page_count = 10  # for local test
-    print('next_page:{0}, page_count:{1}'.format(next_page, page_count))
+    page_count = math.ceil(current_count / ps)
+    # page_count = 3  # for local test
+    print('page:{0}, page_count:{1}'.format(page, page_count))
     print('prepare end' + ('=' * 50))
 
-    for i in range(next_page, page_count):
+    next_page = page + 1
+
+    for i in range(next_page, page_count + 1):
         print('begin crawl page ' + str(i) + ('=' * 50))
         url = page_url(pn=i, ps=ps)
         print('url=', url)
 
         data = fetch_page(url)
+        should_break = False
+
         # todo retry logic
         if data:
             # upsert mad
             upsert_to_db(data)
             # upsert crawler progress: next_page
-            upsert_mad_crawler_next_page()
+            upsert_mad_crawler_page()
+            print('crawl page {0} done. now update page to {0}'.format(i, i))
             # wait
-            time.sleep(2)
+            time.sleep(3)
         else:
+            should_break = True
             print('ERROR: fetch page failed.')
 
         print('end crawl page ' + str(i) + ('=' * 50))
+        if should_break:
+            break;
 
 
 if __name__ == '__main__':
