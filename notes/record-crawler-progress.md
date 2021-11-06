@@ -12,10 +12,10 @@
 
 在当前分页爬取这个案例中，具体来说就是：
 ```
-保存下一个需要爬取的page_number
+保存已成功爬取的page_number
 ```
-例如page_number是50，代表1-49页已经被正常爬取，程序应当从50页开始继续运行。
-page_number初始值是1。
+例如page_number是50，代表1-50页已经被正常爬取，程序应当从51页开始继续运行。
+page_number初始值是0。
 
 ## 其他保存进度的思路
 - 将爬虫进度上下文信息保存进本地文件。
@@ -24,11 +24,11 @@ page_number初始值是1。
 - 将爬虫进度上下文信息保存进redis。redis 双端队列。一个push，一个pop。爬虫程序属于消费者，只会pop。
 
 ## 实现细节
-在mongodb test数据中新建一个collection，名称 mad_crawler_next_page。
+在mongodb test数据中新建一个collection，名称 mad_crawler_page。
 字段如下：
 
 |字段|类型|描述|
 |---|---|---|
 |_id|ObjectId|自带的ID标志|
-|next_page|Int32|页码|
+|page|Int32|页码|
 |last_update|datetime|UTC 日期时间|
