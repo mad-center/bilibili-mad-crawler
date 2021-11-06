@@ -63,7 +63,4 @@ except Exception:
 
 关于 PyMongo的更多文档，查阅[PyMongo 3.12.1 Documentation](https://pymongo.readthedocs.io/en/stable/)
 
-TODO: 测试更多pymongo API methods
-
-## map-reduce
-利用 map-reduce来计算BGM 排行。
+此外，可以测试更多pymongo API methods。熟悉API。

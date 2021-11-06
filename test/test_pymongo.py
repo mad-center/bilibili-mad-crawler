@@ -1,6 +1,8 @@
 import json
 from pprint import pprint
 
+from datetime import datetime
+import time
 import pymongo
 
 from pymongo import UpdateOne
@@ -173,5 +175,49 @@ def test_bulk_next_update():
         print(e)
 
 
+def test_get_mad_crawler_next_page():
+    db = client['test']
+    collection = db['mad_crawler_next_page']
+
+    try:
+        doc = collection.find_one()
+        next_page = doc['next_page']
+        return next_page if next_page else 1
+    except Exception as e:
+        print(e)
+        return None
+
+
+def test_init_mad_crawler_next_page():
+    db = client['test']
+    collection = db['mad_crawler_next_page']
+    doc = {
+        'next_page': 1,
+        'last_update': datetime.now()
+    }
+    res = collection.insert_one(doc)
+    pprint(res)
+
+
+def test_update_mad_crawler_next_page():
+    db = client['test']
+    collection = db['mad_crawler_next_page']
+    try:
+        # find_one_and_update() Returns ``None`` if no document matches the filter.
+        res = collection.find_one_and_update(
+            {},
+            {
+                '$inc': {'next_page': 1},
+                '$set': {'last_update': datetime.now()}
+            },
+            upsert=True
+        )
+
+        return res
+    except Exception as e:
+        pprint('ERROR: update next_page failed', e)
+        return None
+
+
 if __name__ == '__main__':
-    test_create_indexing()
+    print(test_get_mad_crawler_next_page())
