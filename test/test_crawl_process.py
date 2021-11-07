@@ -144,6 +144,7 @@ def upsert_mad_crawler_page():
         res = page_collection.find_one_and_update(
             {},
             {
+                '$setOnInsert': {'create_time': datetime.now()},
                 '$inc': {'page': 1},
                 '$set': {'last_update': datetime.now()}
             },

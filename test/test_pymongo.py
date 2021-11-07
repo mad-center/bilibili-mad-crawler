@@ -191,25 +191,15 @@ def test_get_mad_crawler_page():
         return None
 
 
-def test_init_mad_crawler_page():
+def test_upsert_test_crawler_page():
     db = client['test']
-    collection = db['mad_crawler_page']
-    doc = {
-        'page': 1,
-        'last_update': datetime.now()
-    }
-    res = collection.insert_one(doc)
-    pprint(res)
-
-
-def test_update_mad_crawler_page():
-    db = client['test']
-    collection = db['mad_crawler_page']
+    collection = db['test_crawler_page']
     try:
         # find_one_and_update() Returns ``None`` if no document matches the filter.
         res = collection.find_one_and_update(
             {},
             {
+                '$setOnInsert': {'create_time': datetime.now()},
                 '$inc': {'page': 1},
                 '$set': {'last_update': datetime.now()}
             },
@@ -218,8 +208,9 @@ def test_update_mad_crawler_page():
 
         return res
     except Exception as e:
-        pprint('ERROR: update page failed', e)
+        print('ERROR: update page failed', e)
         return None
 
+
 if __name__ == '__main__':
-    test_update_mad_crawler_next_page()
+    test_upsert_test_crawler_page()

@@ -19,8 +19,11 @@ upsert_to_db() 和 upsert_mad_crawler_page() 返回值都是bool， 当且仅当
 |#|upsert_to_db|upsert_mad_crawler_page|结果|
 |---|---|---|---|
 |#1|True|True|两个都成功，完美。mad新增，page+1。可以进入下一页抓取。|
-|#2|True|False|mad成功，page更新失败。mad新增，page没有+1。数据状态不一致。但是由于mad是upsert，下次插入数据不会产生重复。**必须重试当前page的抓取**。|
-|#3|False|?|mad失败，page更新不会执行。mad和page表都不会更新。数据状态一致。**必须重试当前page的抓取**。|
+|#2|True|False|mad成功，page更新失败。mad新增，page没有+1。数据状态不一致。但是由于mad是upsert，下次插入数据不会产生重复。**停止下一页的抓取，重试当前page的抓取**。|
+|#3|False|?|mad失败，page更新不会执行。mad和page表都不会更新。数据状态一致。**停止下一页的抓取，重试当前page的抓取**。|
+
+总结：upsert_mad_crawler_page()这个method才是记录的关键。一旦 upsert_mad_crawler_page() 失败，就必须暂时停止下一页的抓取，并重试当前页的抓取。
+
 
 ## 依赖第三方库实现
 类似于Spring Transaction库。设置@Transaction标记某个method。这个method就是事务方法。
