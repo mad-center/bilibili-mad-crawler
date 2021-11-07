@@ -60,7 +60,7 @@ def test_use_session():
     s.close()
 
 
-def test_bilibili_api():
+def test_local_proxy_to_bilibili():
     headers = {
         'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.28 Safari/537.36'
     }
@@ -77,6 +77,21 @@ def test_bilibili_api():
     print(r.status_code)
     print(s.headers)
     # {'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.28 Safari/537.36'}
+
+    s.close()
+
+
+def test_other_proxy_to_bilibili():
+    headers = {
+        'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.28 Safari/537.36'
+    }
+
+    s = requests.Session()
+    s.headers = headers
+    proxies = {'https': '124.156.147.244:59394'}
+    r = s.get('https://api.bilibili.com/', proxies=proxies)
+    print(r.status_code)
+    print(s.headers)
 
     s.close()
 
@@ -99,5 +114,5 @@ def test_set_cookie():
 # test_use_proxies()
 # test_use_session()
 # test_set_cookie()
-
-test_bilibili_api()
+# test_local_proxy_to_bilibili()
+test_other_proxy_to_bilibili()

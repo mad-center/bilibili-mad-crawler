@@ -77,22 +77,31 @@ def upsert_to_db(data):
         print('upsert_to_db() data is None.')
 
 
-def fetch_page(url):
-    try:
-        headers = request_headers()
-        r = requests.get(url, headers)
-        json = r.json()
-        if json and json['code'] == 0:
-            return json['data']
-        else:
-            print('response ok but no data')
-            return None
-    except Exception as e:
-        # HTTPSConnectionPool(host='api.bilibili.com', port=443):
-        # Max retries exceeded with url: /x/web-interface/newlist?rid=24&type=0&pn=1&ps=20
-        # (Caused by ProxyError('Cannot connect to proxy.', OSError(0, 'Error')))
-        print('ERROR: fetch_page', e)
-        return None
+def fetch_page(url, retry_max=3):
+    retry_count = 0
+    retry_max = retry_max
+
+    while retry_count <= retry_max:
+        try:
+            headers = request_headers()
+            r = requests.get(url, headers)
+            json = r.json()
+            if json and json['code'] == 0:
+                return json['data']
+            else:
+                print('response ok but no data')
+                return None
+        except Exception as e:
+            # HTTPSConnectionPool(host='api.bilibili.com', port=443):
+            # Max retries exceeded with url: /x/web-interface/newlist?rid=24&type=0&pn=1&ps=20
+            # (Caused by ProxyError('Cannot connect to proxy.', OSError(0, 'Error')))
+            print('ERROR: fetch_page', e)
+            time.sleep(3)
+
+            retry_count += 1
+            print('fetch_page retry count: ', retry_count)
+
+    return None
 
 
 def page_url(pn=1, ps=20):
@@ -169,7 +178,9 @@ def crawl():
         should_break = False
 
         # todo retry logic
-        if data:
+        # Condition: len(data['archives']) > 0 保证有数据写入db的一致性。
+        # 否则当出现页码尽头越界时，会造成page数字递增的错误，而此时没有mad数据写入。
+        if data and (len(data['archives']) > 0):
             print('count={0}, num={1}, size={2}, archives len={3}'
                   .format(data['page']['count'], data['page']['num'], data['page']['size'], len(data["archives"])))
 
