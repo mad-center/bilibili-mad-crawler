@@ -71,10 +71,13 @@ def upsert_to_db(data):
                 print('insert: {0}, delete: {1}, modify: {2}'.format(result.inserted_count,
                                                                      result.deleted_count,
                                                                      result.modified_count))
+                return True
             except Exception as e:
                 print('ERROR: bulk_write ', e)
     else:
         print('upsert_to_db() data is None.')
+
+    return False
 
 
 def fetch_page(url, retry_max=3):
@@ -92,9 +95,6 @@ def fetch_page(url, retry_max=3):
                 print('response ok but no data')
                 return None
         except Exception as e:
-            # HTTPSConnectionPool(host='api.bilibili.com', port=443):
-            # Max retries exceeded with url: /x/web-interface/newlist?rid=24&type=0&pn=1&ps=20
-            # (Caused by ProxyError('Cannot connect to proxy.', OSError(0, 'Error')))
             print('ERROR: fetch_page', e)
             time.sleep(3)
 
@@ -149,10 +149,13 @@ def upsert_mad_crawler_page():
             },
             upsert=True
         )
-        return res
+
+        # print(res)
+        return True
     except Exception as e:
         print('ERROR: update page failed', e)
-        return None
+
+    return False
 
 
 def crawl():
@@ -177,7 +180,6 @@ def crawl():
         data = fetch_page(url)
         should_break = False
 
-        # todo retry logic
         # Condition: len(data['archives']) > 0 保证有数据写入db的一致性。
         # 否则当出现页码尽头越界时，会造成page数字递增的错误，而此时没有mad数据写入。
         if data and (len(data['archives']) > 0):
@@ -185,20 +187,25 @@ def crawl():
                   .format(data['page']['count'], data['page']['num'], data['page']['size'], len(data["archives"])))
 
             # do better: the all below ops should be wrapped by transaction
-            # upsert mad
-            upsert_to_db(data)
-            # upsert crawler progress: next_page
-            upsert_mad_crawler_page()
-            print('crawl page {0} done. And update page to {0}'.format(i, i))
-            # wait
-            time.sleep(3)
+            # upsert mad and save context(crawler progress): page
+            # only upsert mad succeed can call upsert page function
+            db_result = upsert_to_db(data) and upsert_mad_crawler_page()
+            should_break = not db_result
         else:
             should_break = True
-            print('ERROR: fetch page failed.')
+            print('ERROR: fetch page failed or data[archives] is empty.')
 
         print('end crawl page ' + str(i) + ('=' * 50))
+
         if should_break:
+            print('break in crawler: db OPS error or no data. cur page={0}'.format(i))
             break
+
+        print('DONE: crawl page {0} and update page to {0}'.format(i, i))
+        # wait
+        time.sleep(3)
+
+    print('你又在爬虫啊，休息一下吧。')
 
 
 if __name__ == '__main__':
