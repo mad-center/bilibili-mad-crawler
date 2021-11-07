@@ -2,7 +2,9 @@
 
 ## 投稿时间排序-分页搜索
 
-> https://api.bilibili.com/x/web-interface/newlist?rid=24&type=0&pn=1&ps=20&jsonp=jsonp
+```http request
+https://api.bilibili.com/x/web-interface/newlist?rid=24&type=0&pn=1&ps=20&jsonp=jsonp
+```
 
 - pn 页码
 - ps 上限为50。默认为20。
@@ -64,7 +66,9 @@ N1...N5.A1..................【A16......A20】.A21....................A35.......
 - 对数据库模型定义添加视频ID唯一的索引约束。(可选)
 
 ### 分页的尽头
-> https://api.bilibili.com/x/web-interface/newlist?rid=24&type=0&pn=50000&ps=20
+```http request
+https://api.bilibili.com/x/web-interface/newlist?rid=24&type=0&pn=50000&ps=20
+```
 
 pn=50000&ps=20 条件下，pn=50000大于目前数据总数。返回的结果为：
 ```json
@@ -88,10 +92,12 @@ pn=50000&ps=20 条件下，pn=50000大于目前数据总数。返回的结果为
 
 ## 视频热度排序-按日期范围搜索
 
-这个api非常好用，能够避免分页搜索随时间推移产生的重复问题。 但是有个弊端，只会得到热门的稿件，凉凉的稿件无法搜索到。
+这个api非常好用，能够避免分页搜索随时间推移产生的重复问题。
 
-> https://s.search.bilibili.com/cate/search?main_ver=v3&search_type=video&view_type=hot_rank&order=click&copy_right=-1
-> &cate_id=24&page=1&pagesize=20&jsonp=jsonp&time_from=20211103&time_to=20211103
+```
+https://s.search.bilibili.com/cate/search?main_ver=v3&search_type=video&view_type=hot_rank&order=click&copy_right=-1
+&cate_id=24&page=1&pagesize=20&jsonp=jsonp&time_from=20211103&time_to=20211103
+```
 
 例如 time_from=20211103&time_to=20211103 表示20211103这天的MAD稿件。
 
@@ -102,8 +108,6 @@ pn=50000&ps=20 条件下，pn=50000大于目前数据总数。返回的结果为
 - "pagesize": 20,
 
 如果pagesize为20，稿件数为53。则会分为3页，分别是20,20,13。
-
-此外，根据上面数据： 每天平均稿件为200，那么MAD稿件热门率约等于 50/200 = 1/4 = 25%。
 
 
 

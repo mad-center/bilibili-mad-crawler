@@ -106,6 +106,24 @@ def test_set_cookie():
     # '{"cookies": {"sessioncookie": "123456789"}}'
 
 
+def test_timeout():
+    try:
+        requests.get('https://api.github.com/some/endpoint', timeout=0.001)
+    # (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x000001DFC7184108>,
+    # 'Connection to api.github.com timed out. (connect timeout=0.001)'))
+    except Exception as e:
+        print(e)
+
+    try:
+        requests.get('http://baidu.com', timeout=0.001)
+    #     HTTPConnectionPool(host='127.0.0.1', port=7890): Read timed out. (read timeout=0.001)
+    except Exception as e:
+        print(e)
+
+    r = requests.get('https://api.github.com/some/endpoint', timeout=5)
+    print(r)
+
+
 # test_get()
 # test_post()
 # test_headers()
@@ -115,4 +133,5 @@ def test_set_cookie():
 # test_use_session()
 # test_set_cookie()
 # test_local_proxy_to_bilibili()
-test_other_proxy_to_bilibili()
+# test_other_proxy_to_bilibili()
+test_timeout()

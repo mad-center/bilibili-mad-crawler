@@ -80,14 +80,14 @@ def upsert_to_db(data):
     return False
 
 
-def fetch_page(url, retry_max=3):
+def fetch_page(url, retry_max=3, timeout=10):
     retry_count = 0
     retry_max = retry_max
 
     while retry_count <= retry_max:
         try:
             headers = request_headers()
-            r = requests.get(url, headers)
+            r = requests.get(url, headers, timeout=timeout)
             json = r.json()
             if json and json['code'] == 0:
                 return json['data']
@@ -163,17 +163,30 @@ def crawl():
     ps = 50
 
     print('prepare begin' + ('=' * 50))
-    # compute next_page and end_page_number
+    # 已完成的爬取页码
     page = mad_crawler_page()
+    # 当前稿件总数
     current_count = mad_estimate_count()
+
     page_count = math.ceil(current_count / ps)
+    if page >= page_count:
+        print('当前已经抵达爬虫页数的尽头', page, page_count, current_count)
+        return
+
     # page_count = 3  # for local test
     print('page:{0}, page_count:{1}'.format(page, page_count))
     print('prepare end' + ('=' * 50))
 
     next_page = page + 1
 
-    for i in range(next_page, page_count + 1):
+    # extract this for logic to func
+    crawl_by_range(next_page, page_count, ps)
+
+    print('你又在爬虫啊，休息一下吧。')
+
+
+def crawl_by_range(page_start, page_end, ps):
+    for i in range(page_start, page_end + 1):
         print('begin crawl page ' + str(i) + ('=' * 50))
         url = page_url(pn=i, ps=ps)
         print('url=', url)
@@ -206,8 +219,7 @@ def crawl():
         # wait
         time.sleep(2)
 
-    print('你又在爬虫啊，休息一下吧。')
-
 
 if __name__ == '__main__':
-    crawl()
+    # crawl()
+    crawl_by_range(1, 60, 50)
