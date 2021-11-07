@@ -203,7 +203,7 @@ def crawl():
 
         print('DONE: crawl page {0} and update page to {0}'.format(i, i))
         # wait
-        time.sleep(3)
+        time.sleep(2)
 
     print('你又在爬虫啊，休息一下吧。')
 
