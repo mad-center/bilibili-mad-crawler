@@ -30,8 +30,9 @@ page_number初始值是0。
 |字段|类型|描述|
 |---|---|---|
 |_id|ObjectId|自带的ID标志|
-|page|Int32|页码|
+|partition_name|String|分区名称|
+|partition_code|String|分区代号|
+|partition_id|Int32|分区rid|
+|done_page|Int32|页码，表示已完成的进度|
 |create_time|datetime|UTC 日期时间，表示爬虫开始时间|
-|last_update|datetime|UTC 日期时间，表示最后一次成功爬虫的时间|
-
-- create_time 这个字段很有必要。当爬虫完成最后一页后，需要回到当前第一页爬虫一段距离的页数。作为时间偏移的补充。
+|update_time|datetime|UTC 日期时间，表示最后一次成功爬虫的时间|

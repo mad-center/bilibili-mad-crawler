@@ -64,11 +64,11 @@ https://s.search.bilibili.com/cate/search?main_ver=v3&search_type=video&view_typ
 猜测新增稿件数 = 时间范围天数取整 * 日均MAX投稿数 = 2* 1500=3000
 ```
 
-那么需要爬取页数为：3000/50=60页。
+那么需要爬取页数为：3000/50=60 页。
 
 ## 实现
 
-讲之前crawl逻辑抽取为一个函数，这个函数爬取指定页数范围的数据。
+将之前crawl中抓取逻辑抽取为一个函数，这个函数爬取指定页数范围的数据。
 
 ``` python
 def crawl_by_range(page_start, page_end, ps):
@@ -82,3 +82,10 @@ def crawl_by_range(page_start, page_end, ps):
 ？？？
 
 这100多个稿件为什么没有抓取到？发生甚么事了？
+
+原因: 早期爬虫代码不完善。发生了这种情况，
+
+- upsert_to_db(data) 失败
+- upsert_mad_crawler_page() 成功
+
+此时依旧走到了下一页的爬取。因此略过了部分页码数据的抓取。

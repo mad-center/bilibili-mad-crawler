@@ -14,3 +14,6 @@ bilibili MAD 分区正常爬虫。
 - [x] HTTP请求异常（超时，或者错误）的重试机制
 - [ ] TCP 连接池 by request.Session() 
 - [ ] 完备的教程，讲述爬虫的设计和原理分析，项目复现步骤
+
+## issue
+by page not full data. please crawl by date range
