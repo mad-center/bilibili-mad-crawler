@@ -3,19 +3,20 @@ import time
 import pymongo
 import requests
 
-from datetime import datetime
+from datetime import datetime, date
 from fake_useragent import UserAgent
 from pymongo import UpdateOne
 
-# url config
-# reference: https://github.com/SocialSisterYi/bilibili-API-collect/blob/master/video/video_zone.md
-primary_partition_name = '番剧(主分区)'
-primary_partition_code = 'anime'
-primary_partition_tid = 13
+import crawl_config as config
 
-subpartition_name = '连载动画'
-subpartition_code = 'serial'
-subpartition_tid = 33
+# url config
+primary_partition_name = 'N/A'
+primary_partition_code = config.primary_partition_code
+primary_partition_tid = 'N/A'
+
+subpartition_name = config.subpartition_name
+subpartition_code = config.subpartition_code
+subpartition_tid = config.subpartition_tid
 
 path = 'https://api.bilibili.com/x/web-interface/newlist'
 type = 0
@@ -26,7 +27,8 @@ ps = 50
 referer = f'https://www.bilibili.com/v/{primary_partition_code}/{subpartition_code}'
 
 # db config
-db_name = 'bilibili'
+db_name = config.db_name if config.db_name else 'bilibili'
+
 conn_str = f"mongodb://127.0.0.1:27017/{db_name}"
 client = pymongo.MongoClient(conn_str, serverSelectionTimeoutMS=5000)
 
@@ -131,21 +133,14 @@ def page_url(path, rid, type, pn=1, ps=50):
     return url
 
 
-def crawl_progress_page():
-    """
-    1. 数据库访问失败。返回None。
-    2. 数据库访问成功，但是没有查询到doc，代表还没有初始化。直接返回0。
-    3. 数据库访问成功，查询到doc，返回doc中的page字段。
-    Returns
-    -------
-    """
+def crawl_progress(type='page'):
     try:
         filter = {
             'partition_id': rid
         }
         doc = crawl_progress_collection.find_one(filter=filter)
         if doc:
-            return doc['done_page']
+            return doc[f'done_{type}']
         else:
             # 0 is initial value for done_page field
             return 0
@@ -154,7 +149,7 @@ def crawl_progress_page():
         return None
 
 
-def upsert_crawl_progress_page():
+def upsert_crawl_progress(type='page'):
     try:
         # find_one_and_update() Returns ``None`` if no document matches the filter.
         res = crawl_progress_collection.find_one_and_update(
@@ -180,22 +175,7 @@ def upsert_crawl_progress_page():
     return False
 
 
-def crawl():
-    done_page = crawl_progress_page()
-    total_count = total_video_count()
-    page_count = math.ceil(total_count / ps)
-    print(f'Analyze: done_page={done_page}, page_count={page_count}, current_count={total_count}')
-
-    if done_page >= page_count:
-        return
-
-    next_page = done_page + 1
-    crawl_by_range(next_page, page_count, ps)
-
-    print('stop crawler.')
-
-
-def crawl_by_range(page_start, page_end, ps, patch=False):
+def crawl_by_page_range(page_start, page_end, ps, patch=False):
     for i in range(page_start, page_end + 1):
 
         url = page_url(path, rid, type, pn=i, ps=ps)
@@ -210,7 +190,7 @@ def crawl_by_range(page_start, page_end, ps, patch=False):
 
             # do better: the all below ops should be wrapped by transaction
             if not patch:
-                db_result = upsert_video(data) and upsert_crawl_progress_page()
+                db_result = upsert_video(data) and upsert_crawl_progress()
                 should_break = not db_result
             else:
                 db_result = upsert_video(data)
@@ -228,6 +208,53 @@ def crawl_by_range(page_start, page_end, ps, patch=False):
         time.sleep(2)
 
 
+def crawl_by_page():
+    done_page = crawl_progress()
+    total_count = total_video_count()
+    page_count = math.ceil(total_count / ps)
+    print(f'Analyze: done_page={done_page}, page_count={page_count}, current_count={total_count}')
+
+    if done_page >= page_count:
+        return
+
+    next_page = done_page + 1
+    crawl_by_page_range(next_page, page_count, ps)
+
+    print('stop crawler.')
+
+
+def earliest_video_date():
+    total_count = total_video_count()
+    page_count = math.ceil(total_count / ps)
+    last_url = page_url(path, rid, type, pn=page_count, ps=ps)
+
+    data = fetch_page(last_url)
+    if data and len(data['archives']) > 0:
+        archives = data['archives']
+        pubdate = archives[0]['pubdate']
+
+        for idx, archive in enumerate(archives):
+            pubdate_ = archive['pubdate']
+            if pubdate_ < pubdate:
+                pubdate = pubdate_
+
+        date_begin_str = datetime.fromtimestamp(pubdate).strftime('%Y-%m-%d')
+        date_begin = datetime.strptime(date_begin_str, '%Y-%m-%d')
+        return date(date_begin.year, date_begin.month, date_begin.day)
+
+    return None
+
+
+def crawl_by_date_range():
+    print()
+
+
+def crawl_by_date():
+    date_begin = earliest_video_date()
+    print(date_begin)
+
+
 if __name__ == '__main__':
-    crawl()
-    # crawl_by_range(1, 20, 50, patch=True)
+    # crawl_by_page()
+    # crawl_by_page_range(1, 10, 50, patch=True)
+    crawl_by_date()

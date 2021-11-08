@@ -50,27 +50,45 @@ N1...N5.A1..................【A16......A20】.A21....................A35.......
 明白这个现象的存在性非常必要。此时可以考虑如何避免数据库插入重复数据。这个逻辑可以在应用层，或者在数据库层进行处理。
 
 在应用层主动筛选抛弃：
-1. 应用层代码在抓取当前页数据后，保存这一页全部视频的ID到一个id_array中。例如，[A1...A20]。 
-2. 抓取下一页后，将抓取到的视频id 列表和这个id_array比较，如果已经存在，那就抛弃这条数据。插入剩余数据到数据库后，更新id_array。
-   以此类推。
+
+1. 应用层代码在抓取当前页数据后，保存这一页全部视频的ID到一个id_array中。例如，[A1...A20]。
+2. 抓取下一页后，将抓取到的视频id 列表和这个id_array比较，如果已经存在，那就抛弃这条数据。插入剩余数据到数据库后，更新id_array。 以此类推。
 
 或者在数据库层挑选插入：
-1. 应用层不去关心数据有没重复，使用mongodb的upsert功能，设置upsert为true。
-   查询特定数据，如果已存在，那就不插入，否则就插入该条数据。这个机制，依赖的是数据库的挑选插入功能。
+
+1. 应用层不去关心数据有没重复，使用mongodb的upsert功能，设置upsert为true。 查询特定数据，如果已存在，那就不插入，否则就插入该条数据。这个机制，依赖的是数据库的挑选插入功能。
 
 或者利用数据库的唯一索引进行暴力约束：
+
 1. 因为视频ID必然唯一。那么定义schema model时设置视频ID为unique。这样，重复数据是无法插入的。这是数据库系统规范对你的承诺。
 
 这三种方式都是可行的。基于简单考虑，使用2+3的策略。
+
 - 使用【当不存在就新增，存在则更新】的批量更新策略。
 - 对数据库模型定义添加视频ID唯一的索引约束。(可选)
 
-### 分页的尽头
+### 最后一页
+
+这里以另外一个分区的API为例，因为这个分区总稿件数较少。 番剧主分区-连载动画：
+
+```
+https://api.bilibili.com/x/web-interface/newlist?rid=33&type=0&pn=602&ps=50
+```
+
+最后一页的数据截图：
+
+![](./assets/serial_last_page_data_length_werid.png)
+
+这个现象说明：最后一页的数据长度可能和page.count不对应。这个估计是bilibili cache的问题。
+
+### 爬取超过最后一页
+
 ```http request
 https://api.bilibili.com/x/web-interface/newlist?rid=24&type=0&pn=50000&ps=20
 ```
 
 pn=50000&ps=20 条件下，pn=50000大于目前数据总数。返回的结果为：
+
 ```json
 {
   "code": 0,
@@ -78,7 +96,6 @@ pn=50000&ps=20 条件下，pn=50000大于目前数据总数。返回的结果为
   "ttl": 1,
   "data": {
     "archives": [
-      
     ],
     "page": {
       "count": 0,
@@ -88,7 +105,28 @@ pn=50000&ps=20 条件下，pn=50000大于目前数据总数。返回的结果为
   }
 }
 ```
-那么程序需要进行archives的长度判断。
+
+那么程序需要进行archives的长度>0判断。
+
+### archive 格式
+
+``` json
+"stat": {
+    "aid": 721418604,
+    "view": 0, 播放
+    "danmaku": 0, 弹幕
+    "reply": 0, 回复
+    "favorite": 0, 收藏
+    "coin": 0, 硬币
+    "share": 0, 分享
+    "now_rank": 0, 目前排名
+    "his_rank": 0, 历史最高排名
+    "like": 0, 点赞
+    "dislike": 0 默认为0
+}
+```
+
+这个API返回的数据中含有很全面的视频统计信息。
 
 ## 视频热度排序-按日期范围搜索
 
@@ -109,5 +147,37 @@ https://s.search.bilibili.com/cate/search?main_ver=v3&search_type=video&view_typ
 
 如果pagesize为20，稿件数为53。则会分为3页，分别是20,20,13。
 
+### archive 格式
+
+``` json
+{
+  "senddate": 1635874522,
+  "rank_offset": 2,
+  "tag": "名侦探柯南,剪辑,灰原哀,新人向,MAD.AMV,您的剪辑作业已提交",
+  "duration": 102,
+  "id": 848891453,
+  "rank_score": 1559,
+  "badgepay": false,
+  "pubdate": "2021-11-03 01:35:22",
+  "author": "kylin小王几",
+  "review": 9, <-------------------------------
+  "mid": 179265650,
+  "is_union_video": 0,
+  "rank_index": 0,
+  "type": "video",
+  "arcrank": "0",
+  "play": "1559", <---------------------------------
+  "pic": "//i0.hdslb.com/bfs/archive/e4c74adc6d157adee097a35ea55bb702a162ff15.jpg",
+  "description": "哀酱的素材多到根本剪不完！\n从娘胎起就是哀吹的小玲同学来报到啦\nbgm： say so",
+  "video_review": 0,
+  "is_pay": 0,
+  "favorites": 18, <--------------------------
+  "arcurl": "http://www.bilibili.com/video/av848891453",
+  "bvid": "BV1cL4y1q7Aq",
+  "title": "哀酱也想要say so~"
+}
+```
+
+这里，只有review（评论），play（播放），favorites（收藏）字段。
 
 

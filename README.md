@@ -1,8 +1,11 @@
 # bilibili mad crawler
 
-bilibili MAD 分区正常爬虫。
+> rename to bilibili-partition-crawler?
+
+bilibili 分区视频的爬虫设计与实现。| A crawler design and implementation for bilibili partition video。
 
 ## features
+
 - [x] 《论爬虫演员的自我修养》
 - [x] 时间成本分析
 - [x] bilibili MAD api分析：分页搜索和热度搜索
@@ -10,10 +13,10 @@ bilibili MAD 分区正常爬虫。
 - [x] 强悍的恢复能力：爬虫进度上下文的保存，随时中断和恢复
 - [x] 数据库事务分析，保证爬虫进度数据一致性
 - [x] 多线程并行请求的分析
-  - [ ] 拆解爬虫进度上下文为多段range。
+    - [ ] 拆解爬虫进度上下文为多段range。
 - [x] HTTP请求异常（超时，或者错误）的重试机制
-- [ ] TCP 连接池 by request.Session() 
+- [ ] TCP 连接池 by request.Session()
 - [ ] 完备的教程，讲述爬虫的设计和原理分析，项目复现步骤
-
-## issue
-by page not full data. please crawl by date range
+- [ ] 爬虫机制
+    - [x] 单线程=按页
+    - [ ] 单线程-按日期
