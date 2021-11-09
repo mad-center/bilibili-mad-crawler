@@ -1,10 +1,7 @@
 import json
-from pprint import pprint
-
 from datetime import datetime
-import time
-import pymongo
 
+import pymongo
 from pymongo import UpdateOne
 
 # Replace the uri string with your MongoDB deployment's connection string.
@@ -212,5 +209,20 @@ def test_upsert_test_crawler_page():
         return None
 
 
+def test_update_one():
+    result = client.test.user.update_one(
+        {
+            # 'name': 'admin_not_exist'
+            'name': 'admin'
+        },
+        {
+            '$set': {
+                'review': 'changed'
+            }
+        }
+    )
+    print(result.modified_count)
+
+
 if __name__ == '__main__':
-    test_upsert_test_crawler_page()
+    test_update_one()

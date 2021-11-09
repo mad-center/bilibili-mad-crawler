@@ -27,6 +27,8 @@
 |- | 15999| |false| |
 |- | 16000| |false| |
 
+> page 字段必须设置unique index。
+
 中间状态示例: 线程随机获取记录行并更新
 
 |_id|page|data_size|state|update_time|
@@ -51,6 +53,8 @@
 |- | 2021-11-07| |false| |
 |- | 2021-11-08| |false| |
 
+> date 字段必须设置unique index。
+
 中间状态
 
 |_id|date|data_size_array|state|update_time|
@@ -61,3 +65,5 @@
 |- | ...| |false| |
 |- | 2021-11-07|[50,50,45] |true|- |
 |- | 2021-11-08| |false| |
+
+data_size_array是array类型，每个值分别表示特定页的稿件数。

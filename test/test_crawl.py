@@ -1,9 +1,10 @@
 import math
 import time
+from concurrent import futures
+from datetime import datetime, date
+
 import pymongo
 import requests
-
-from datetime import datetime, date
 from fake_useragent import UserAgent
 from pymongo import UpdateOne
 
@@ -29,12 +30,12 @@ referer = f'https://www.bilibili.com/v/{primary_partition_code}/{subpartition_co
 # db config
 db_name = config.db_name if config.db_name else 'bilibili'
 
-conn_str = f"mongodb://127.0.0.1:27017/{db_name}"
+conn_str = f"{config.mongodb_url}{db_name}"
 client = pymongo.MongoClient(conn_str, serverSelectionTimeoutMS=5000)
 
 db = client[db_name]
 current_collection = db[subpartition_code]
-crawl_progress_collection = db['crawl_progress']
+crawl_progress_collection = db[config.crawl_progress_collection_name]
 
 
 def total_video_count():
@@ -77,7 +78,7 @@ def request_headers(referer='', random_ua=True):
     return headers
 
 
-def upsert_video(data):
+def upsert_archives(data):
     if data:
         archives = data['archives']
         if len(archives) > 0:
@@ -97,7 +98,7 @@ def upsert_video(data):
             except Exception as e:
                 print('ERROR: bulk_write ', e)
     else:
-        print('upsert_video() data is None.')
+        print('upsert_archives() data is None.')
 
     return False
 
@@ -140,7 +141,7 @@ def crawl_progress(type='page'):
         }
         doc = crawl_progress_collection.find_one(filter=filter)
         if doc:
-            return doc[f'done_{type}']
+            return doc['done_page']
         else:
             # 0 is initial value for done_page field
             return 0
@@ -175,54 +176,6 @@ def upsert_crawl_progress(type='page'):
     return False
 
 
-def crawl_by_page_range(page_start, page_end, ps, patch=False):
-    for i in range(page_start, page_end + 1):
-
-        url = page_url(path, rid, type, pn=i, ps=ps)
-        print('url=', url)
-
-        data = fetch_page(url)
-        should_break = False
-
-        if data and (len(data['archives']) > 0):
-            print('count={0}, num={1}, size={2}, archives len={3}'
-                  .format(data['page']['count'], data['page']['num'], data['page']['size'], len(data["archives"])))
-
-            # do better: the all below ops should be wrapped by transaction
-            if not patch:
-                db_result = upsert_video(data) and upsert_crawl_progress()
-                should_break = not db_result
-            else:
-                db_result = upsert_video(data)
-                should_break = not db_result
-        else:
-            should_break = True
-            print('ERROR: fetch page failed or data[archives] is empty.')
-
-        if should_break:
-            print('break in crawler: db OPS error or no data. cur page={0}'.format(i))
-            break
-
-        print('DONE: crawl page {0} and update page to {0}'.format(i, i))
-
-        time.sleep(2)
-
-
-def crawl_by_page():
-    done_page = crawl_progress()
-    total_count = total_video_count()
-    page_count = math.ceil(total_count / ps)
-    print(f'Analyze: done_page={done_page}, page_count={page_count}, current_count={total_count}')
-
-    if done_page >= page_count:
-        return
-
-    next_page = done_page + 1
-    crawl_by_page_range(next_page, page_count, ps)
-
-    print('stop crawler.')
-
-
 def earliest_video_date():
     total_count = total_video_count()
     page_count = math.ceil(total_count / ps)
@@ -245,16 +198,157 @@ def earliest_video_date():
     return None
 
 
-def crawl_by_date_range():
+def single_crawl_by_page_range(page_start, page_end, ps, patch=False):
+    for i in range(page_start, page_end + 1):
+
+        url = page_url(path, rid, type, pn=i, ps=ps)
+        print('url=', url)
+
+        data = fetch_page(url)
+        should_break = False
+
+        if data and (len(data['archives']) > 0):
+            print('count={0}, num={1}, size={2}, archives len={3}'
+                  .format(data['page']['count'], data['page']['num'], data['page']['size'], len(data["archives"])))
+
+            # do better: the all below ops should be wrapped by transaction
+            if not patch:
+                db_result = upsert_archives(data) and upsert_crawl_progress()
+                should_break = not db_result
+            else:
+                db_result = upsert_archives(data)
+                should_break = not db_result
+        else:
+            should_break = True
+            print('ERROR: fetch page failed or data[archives] is empty.')
+
+        if should_break:
+            print('break in crawler: db OPS error or no data. cur page={0}'.format(i))
+            break
+
+        print('DONE: crawl page {0} and update page to {0}'.format(i, i))
+
+        time.sleep(2)
+
+
+def single_crawl_by_page():
+    done_page = crawl_progress()
+    total_count = total_video_count()
+    page_count = math.ceil(total_count / ps)
+    print(f'Analyze: done_page={done_page}, page_count={page_count}, page_count={total_count}')
+
+    if done_page >= page_count:
+        return
+
+    next_page = done_page + 1
+    single_crawl_by_page_range(next_page, page_count, ps)
+
+    print('stop crawler.')
+
+
+def single_crawl_by_date_range():
+    # todo
     print()
 
 
-def crawl_by_date():
+def single_crawl_by_date():
+    # todo
     date_begin = earliest_video_date()
     print(date_begin)
 
 
+def multi_crawl_by_page_init_progress(page_count):
+    if page_count > 0:
+        # _id	page	data_size	state	update_time
+        documents = [{'page': i, 'data_size': 0, 'state': False, 'update_time': None} for i in range(1, page_count + 1)]
+        try:
+            result = crawl_progress_collection.insert_many(documents)
+            result_index = crawl_progress_collection.create_index([('page', pymongo.ASCENDING)], unique=True)
+            if len(result.inserted_ids) > 0 and result_index:
+                print('SUCCESS: multi_crawl_by_page_init_progress')
+                return True
+        except Exception as e:
+            # E11000 duplicate key error
+            # print(e)
+            pass
+
+    return False
+
+
+def multi_crawl_by_page_tag_progress(page_num, data_size):
+    result = crawl_progress_collection.update_one(
+        {'page': page_num},
+        {
+            '$set': {'state': True, 'update_time': datetime.now(), 'data_size': data_size}
+        }
+    )
+
+    return result.modified_count == 1
+
+
+def random_select_progress(size=4):
+    filter = {
+        '$match': {'state': False}
+    }
+    sample = {
+        '$sample': {'size': size}
+    }
+    cursor = crawl_progress_collection.aggregate([filter, sample])
+    if cursor:
+        return cursor
+    else:
+        return None
+
+
+def request_task(page_num):
+    """
+    thread task wrapper.
+    """
+    url = page_url(path, rid, type, pn=page_num, ps=50)
+    return fetch_page(url)
+
+
+def multi_crawl_by_page():
+    total_count = total_video_count()
+    page_count = math.ceil(total_count / ps)
+    print(f'STATS: page_count={page_count}, total_count={total_count}')
+
+    # init progress
+    multi_crawl_by_page_init_progress(page_count=page_count)
+
+    # get batch random page numbers from db
+    cursor = random_select_progress(size=4)
+    if cursor is None:
+        print('FINISH:　No task in crawl progress.')
+        return
+
+    page_nums = [doc['page'] for doc in cursor]
+    print('SUCCESS: random select page nums', page_nums)
+
+    # Note: `page_urls` and `tasks` below are parallel array. They have corresponding relation.
+
+    with futures.ThreadPoolExecutor(max_workers=4, thread_name_prefix='crawler_thread_') as executor:
+        tasks = [executor.submit(request_task, page_num) for i, page_num in enumerate(page_nums)]
+        sets = futures.wait(tasks, timeout=10, return_when=futures.ALL_COMPLETED)
+
+        for idx, task in enumerate(tasks):
+            print(f'idx: {idx}, page_num: {page_nums[idx]}')
+            data = task.result()
+
+            if data and len(data['archives']) > 0:
+                upsert_archives_feedback = upsert_archives(data)
+                if upsert_archives_feedback:
+                    print(f'UPDATE: crawl progress with page num - {page_nums[idx]}')
+                    multi_crawl_by_page_tag_progress(page_num=page_nums[idx], data_size=len(data['archives']))
+                else:
+                    print('WARN: upsert archives succeed but update crawl progress failed ====> FAIL')
+            else:
+                # 某个task出错或者page越界拿不到数据
+                # 直接忽略这个task
+                print(f'WARN: ignore task with page number - {page_nums[idx]}')
+
+    print('multi_crawl_by_page done.')
+
+
 if __name__ == '__main__':
-    # crawl_by_page()
-    # crawl_by_page_range(1, 10, 50, patch=True)
-    crawl_by_date()
+    multi_crawl_by_page()
