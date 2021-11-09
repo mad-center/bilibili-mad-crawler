@@ -295,14 +295,17 @@ def multi_crawl_by_page_init_progress(page_count):
 
 
 def multi_crawl_by_page_tag_progress(page_num, data_size):
-    result = crawl_progress_collection.update_one(
-        {'page': page_num},
-        {
-            '$set': {'state': True, 'update_time': datetime.now(), 'data_size': data_size}
-        }
-    )
+    try:
+        result = crawl_progress_collection.update_one(
+            {'page': page_num},
+            {
+                '$set': {'state': True, 'update_time': datetime.now(), 'data_size': data_size}
+            }
+        )
 
-    return result.modified_count == 1
+        return result.modified_count == 1
+    except:
+        return False
 
 
 def random_select_page_nums(size=8):
@@ -343,16 +346,40 @@ def multi_crawl_by_page_nums(page_nums):
         for idx, task in enumerate(tasks):
             data = task.result()
             if data and len(data['archives']) > 0:
-                # do better： multi thread mongo CRUD operations
-                upsert_archives_feedback = insert_archives(data)
-                if upsert_archives_feedback:
-                    # print(f'UPDATE: crawl progress with page num - {page_nums[idx]}')
-                    multi_crawl_by_page_tag_progress(page_num=page_nums[idx], data_size=len(data['archives']))
-                else:
-                    print('WARN: upsert archives succeed but update crawl progress failed ====> FAIL')
+                # multi-documents transaction
+                non_atomic_transaction(data, idx, page_nums)
             else:
                 # ignore this task no matter what happens
-                print(f'WARN: ignore task with page number - {page_nums[idx]}')
+                print(f'IGNORE: task failed due to NO data with page number - {page_nums[idx]}')
+
+
+def non_atomic_transaction(data, idx, page_nums):
+    upsert_archives_feedback = insert_archives(data)
+    if upsert_archives_feedback:
+        tag_progress_feedback = multi_crawl_by_page_tag_progress(page_num=page_nums[idx],
+                                                                 data_size=len(data['archives']))
+        if not tag_progress_feedback:
+            print('TODO: should rollback current insert_archives(data)')
+            print('Duplicate DATA', data)
+    else:
+        print('IGNORE: insert_archives() failed')
+
+
+def atomic_transaction(data, idx, page_nums):
+    archives = data['archives']
+    page_num = page_nums[idx]
+    data_size = len(data['archives'])
+
+    with client.start_session() as session:
+        with session.start_transaction():
+            result1 = current_collection.insert_many(archives, session=session)
+            result2 = crawl_progress_collection.update_one(
+                {'page': page_num},
+                {
+                    '$set': {'state': True, 'update_time': datetime.now(), 'data_size': data_size}
+                },
+                session=session
+            )
 
 
 def multi_crawl_by_page():
@@ -387,6 +414,9 @@ def multi_crawl_by_page():
         if len(page_nums) == 0:
             print('FINISH:　No task in crawl progress.')
             break
+
+    # cleanup
+    client.close()
 
 
 if __name__ == '__main__':

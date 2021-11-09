@@ -1,6 +1,9 @@
 # 数据库事务
 
-## 自身实现
+## ~~自身实现~~
+
+> two-phase commit
+
 ``` python
 upsert_to_db(data) and upsert_mad_crawler_page()
 ```
@@ -24,7 +27,5 @@ upsert_to_db() 和 upsert_mad_crawler_page() 返回值都是bool， 当且仅当
 
 总结：upsert_mad_crawler_page()这个method才是记录的关键。一旦 upsert_mad_crawler_page() 失败，就必须暂时停止下一页的抓取，并重试当前页的抓取。
 
-
-## 依赖第三方库实现
-类似于Spring Transaction库。设置@Transaction标记某个method。这个method就是事务方法。
-这个method内一切DB操作要么全部成功，要么全部失败。
+## PyMongo Client 3.7+
+> https://pymongo.readthedocs.io/en/stable/api/pymongo/client_session.html#transactions

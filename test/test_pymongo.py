@@ -224,5 +224,37 @@ def test_update_one():
     print(result.modified_count)
 
 
+# https://pymongo.readthedocs.io/en/stable/api/pymongo/client_session.html#transactions
+# Transaction numbers are only allowed on a replica set member or mongos
+def test_start_transaction():
+    orders = client.db.orders
+    inventory = client.db.inventory
+    with client.start_session() as session:
+        with session.start_transaction():
+            orders.insert_one({"sku": "abc123", "qty": 100}, session=session)
+            inventory.update_one({"sku": "abc123", "qty": {"$gte": 100}},
+                                 {"$inc": {"qty": -100}}, session=session)
+
+
+def callback(session):
+    orders = session.client.db.orders
+    inventory = session.client.db.inventory
+    orders.insert_one({"sku": "abc123", "qty": 100}, session=session)
+    inventory.update_one({"sku": "abc123", "qty": {"$gte": 100}},
+                         {"$inc": {"qty": -100}}, session=session)
+
+
+def callback2(session, custom_arg, custom_kwarg=None):
+    # Transaction operations...
+    pass
+
+
+# https://pymongo.readthedocs.io/en/stable/api/pymongo/client_session.html#pymongo.client_session.ClientSession.with_transaction
+def test_with_transaction():
+    with client.start_session() as session:
+        session.with_transaction(callback)
+        session.with_transaction(lambda s: callback2(s, "custom_arg", custom_kwarg=1))
+
+
 if __name__ == '__main__':
-    test_update_one()
+    test_start_transaction()
