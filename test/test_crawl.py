@@ -78,25 +78,44 @@ def request_headers(referer='', random_ua=True):
     return headers
 
 
-def upsert_archives(data):
-    if data:
+def insert_archives(data, log=False):
+    if data and len(data['archives']) > 0:
         archives = data['archives']
-        if len(archives) > 0:
-            operations = []
-
-            for idx, archive in enumerate(archives):
-                filter = {'aid': archive['aid']}
-                update = {'$set': archive}
-                operations.append(UpdateOne(filter, update, upsert=True))
-
-            try:
-                result = current_collection.bulk_write(operations)
+        try:
+            result = current_collection.insert_many(archives)
+            if log:
                 print('insert: {0}, delete: {1}, modify: {2}'.format(result.inserted_count,
                                                                      result.deleted_count,
                                                                      result.modified_count))
-                return True
-            except Exception as e:
-                print('ERROR: bulk_write ', e)
+            return True
+        except Exception as e:
+            print('ERROR: bulk_write ', e)
+    else:
+        print('insert_archives: data is None.')
+
+    return False
+
+
+def upsert_archives(data, log=False):
+    if data and len(data['archives']) > 0:
+        archives = data['archives']
+        operations = []
+
+        for idx, archive in enumerate(archives):
+            filter = {'aid': archive['aid']}
+            update = {'$set': archive}
+            operations.append(UpdateOne(filter, update, upsert=True))
+
+        try:
+            result = current_collection.bulk_write(operations)
+            if log:
+                print('insert: {0}, delete: {1}, modify: {2}'.format(result.inserted_count,
+                                                                     result.deleted_count,
+                                                                     result.modified_count))
+            return True
+        except Exception as e:
+            print('ERROR: bulk_write ', e)
+
     else:
         print('upsert_archives() data is None.')
 
@@ -286,18 +305,26 @@ def multi_crawl_by_page_tag_progress(page_num, data_size):
     return result.modified_count == 1
 
 
-def random_select_progress(size=4):
-    filter = {
-        '$match': {'state': False}
-    }
-    sample = {
-        '$sample': {'size': size}
-    }
-    cursor = crawl_progress_collection.aggregate([filter, sample])
-    if cursor:
-        return cursor
+def random_select_page_nums(size=8):
+    pipeline = [
+        {
+            "$match": {
+                "state": False
+            }
+        },
+        {
+            "$sample": {
+                "size": size
+            }
+        }
+    ]
+    cursor = crawl_progress_collection.aggregate(pipeline)
+    docs = list(cursor)
+    if len(docs) > 0:
+        page_nums = [doc['page'] for doc in docs]
+        return page_nums
     else:
-        return None
+        return []
 
 
 def request_task(page_num):
@@ -308,47 +335,60 @@ def request_task(page_num):
     return fetch_page(url)
 
 
-def multi_crawl_by_page():
-    total_count = total_video_count()
-    page_count = math.ceil(total_count / ps)
-    print(f'STATS: page_count={page_count}, total_count={total_count}')
-
-    # init progress
-    multi_crawl_by_page_init_progress(page_count=page_count)
-
-    # get batch random page numbers from db
-    cursor = random_select_progress(size=4)
-    if cursor is None:
-        print('FINISH:　No task in crawl progress.')
-        return
-
-    page_nums = [doc['page'] for doc in cursor]
-    print('SUCCESS: random select page nums', page_nums)
-
-    # Note: `page_urls` and `tasks` below are parallel array. They have corresponding relation.
-
+def multi_crawl_by_page_nums(page_nums):
     with futures.ThreadPoolExecutor(max_workers=4, thread_name_prefix='crawler_thread_') as executor:
         tasks = [executor.submit(request_task, page_num) for i, page_num in enumerate(page_nums)]
         sets = futures.wait(tasks, timeout=10, return_when=futures.ALL_COMPLETED)
 
         for idx, task in enumerate(tasks):
-            print(f'idx: {idx}, page_num: {page_nums[idx]}')
             data = task.result()
-
             if data and len(data['archives']) > 0:
-                upsert_archives_feedback = upsert_archives(data)
+                # do better： multi thread mongo CRUD operations
+                upsert_archives_feedback = insert_archives(data)
                 if upsert_archives_feedback:
-                    print(f'UPDATE: crawl progress with page num - {page_nums[idx]}')
+                    # print(f'UPDATE: crawl progress with page num - {page_nums[idx]}')
                     multi_crawl_by_page_tag_progress(page_num=page_nums[idx], data_size=len(data['archives']))
                 else:
                     print('WARN: upsert archives succeed but update crawl progress failed ====> FAIL')
             else:
-                # 某个task出错或者page越界拿不到数据
-                # 直接忽略这个task
+                # ignore this task no matter what happens
                 print(f'WARN: ignore task with page number - {page_nums[idx]}')
 
-    print('multi_crawl_by_page done.')
+
+def multi_crawl_by_page():
+    total_count = total_video_count()
+    page_count = math.ceil(total_count / ps)
+    print(f'STATS: page_count={page_count}, total_count={total_count}')
+    print('=' * 50)
+
+    # init progress
+    # SYNC
+    init_progress = multi_crawl_by_page_init_progress(page_count=page_count)
+
+    # get batch random page numbers from db
+    page_nums_detect = random_select_page_nums(size=8)
+    if len(page_nums_detect) == 0:
+        print('FINISH:　No task in crawl progress.')
+        return
+
+    while True:
+        page_nums = random_select_page_nums(size=8)
+        print('SUCCESS: random select page nums', page_nums)
+
+        # Note: `page_urls` and `tasks` below are parallel array. They have corresponding relation.
+        multi_crawl_by_page_nums(page_nums)
+
+        print('SUCCESS: multi_crawl_by_page_nums', page_nums)
+
+        time.sleep(2)
+
+        page_nums = random_select_page_nums(size=8)
+
+        if len(page_nums) == 0:
+            print('FINISH:　No task in crawl progress.')
+            break
 
 
 if __name__ == '__main__':
+    # print(current_collection.count_documents({}))
     multi_crawl_by_page()
