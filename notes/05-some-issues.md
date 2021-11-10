@@ -34,11 +34,11 @@ db.getCollection("mad").aggregate(
 
 通过aid查看mad:
 
-- 记录条数为2
+- 记录条数为2的重复稿件例子
 
 ![](./assets/duplicate_mad_sample.png)
 
-- 记录条数为3
+- 记录条数为3的重复稿件例子
 
 ![](./assets/duplicate_mad_sample_2.png)
 
