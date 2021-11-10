@@ -339,24 +339,28 @@ def request_task(page_num):
 
 
 def multi_crawl_by_page_nums(page_nums):
-    with futures.ThreadPoolExecutor(max_workers=4, thread_name_prefix='crawler_thread_') as executor:
-        tasks = [executor.submit(request_task, page_num) for i, page_num in enumerate(page_nums)]
-        sets = futures.wait(tasks, timeout=10, return_when=futures.ALL_COMPLETED)
+    try:
+        with futures.ThreadPoolExecutor(max_workers=4, thread_name_prefix='crawler_thread_') as executor:
+            tasks = [executor.submit(request_task, page_num) for i, page_num in enumerate(page_nums)]
+            sets = futures.wait(tasks, timeout=10, return_when=futures.ALL_COMPLETED)
 
-        for idx, task in enumerate(tasks):
-            data = task.result()
-            if data and len(data['archives']) > 0:
-                # multi-documents transaction
-                non_atomic_transaction(data, idx, page_nums)
-            else:
-                # ignore this task no matter what happens
-                print(f'IGNORE: task failed due to NO data with page number - {page_nums[idx]}')
+            for idx, task in enumerate(tasks):
+                data = task.result()
+                if data and len(data['archives']) > 0:
+                    # multi-documents transaction
+                    non_atomic_transaction(data, page_nums[idx])
+                else:
+                    # ignore this task no matter what happens
+                    print(f'IGNORE: task failed due to NO data with page number - {page_nums[idx]}')
+    except Exception as e:
+        print('ERROR: multi_crawl_by_page_nums: ', e)
+        pass
 
 
-def non_atomic_transaction(data, idx, page_nums):
+def non_atomic_transaction(data, page_num):
     upsert_archives_feedback = insert_archives(data)
     if upsert_archives_feedback:
-        tag_progress_feedback = multi_crawl_by_page_tag_progress(page_num=page_nums[idx],
+        tag_progress_feedback = multi_crawl_by_page_tag_progress(page_num=page_num,
                                                                  data_size=len(data['archives']))
         if not tag_progress_feedback:
             print('TODO: should rollback current insert_archives(data)')
@@ -365,9 +369,8 @@ def non_atomic_transaction(data, idx, page_nums):
         print('IGNORE: insert_archives() failed')
 
 
-def atomic_transaction(data, idx, page_nums):
+def atomic_transaction(data, page_num):
     archives = data['archives']
-    page_num = page_nums[idx]
     data_size = len(data['archives'])
 
     with client.start_session() as session:
