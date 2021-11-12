@@ -151,6 +151,8 @@ bulk.execute();
 - 年度MAD投稿最具潜力的新up TOP 20: mid[]
 - 年度MAD投稿的up等级分布情况：map<level,mid_distinct_count>
 
+2009-2020,可以得出12个年度报告。2021先不考虑。
+
 ### 2009-现在的总数据
 
 - MAD总投稿量 => number
@@ -172,8 +174,12 @@ bulk.execute();
 - MAD投稿的up等级分布情况：map<level,mid_distinct_count>
 
 ### 东方Project凉了吗？
+
 - 每年含有东方project相关tag的MAD稿件数量
+
 > 需要补充抓取tag
 
 ### BGM数据挖掘
+
+挖坑。
 

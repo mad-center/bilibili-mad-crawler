@@ -10,7 +10,7 @@ subpartition_name = 'MAD·AMV'
 subpartition_code = 'mad'
 subpartition_tid = 24
 
-crawl_progress_collection_name = ' multi_crawl_mad_by_init_tag'
+crawl_progress_collection_name = 'multi_crawl_mad_by_init_tag'
 
 # ============================================================
 # 完结动画	finish	32	已完结的动画番剧合集	/v/anime/finish
