@@ -111,6 +111,48 @@ def every_month_publishing():
     return ordered_dict
 
 
+def up_with_the_highest_number_of_publishing():
+    project_more = {
+        '$project': {
+            'aid': '$aid',
+            'mid': '$owner.mid',
+            'pubdate_str': {
+                '$toDate': {
+                    '$multiply': ["$pubdate", 1000]
+                }
+            }
+        }
+    }
+    group_by_mid = {
+        '$group': {
+            '_id': '$mid',
+            '_count': {
+                '$sum': 1
+            }
+        }
+    }
+    sort_by_count = {
+        '$sort': {
+            '_count': -1
+        }
+    }
+    # limit result TOP 20 when length >=20
+    limit = {
+        '$limit': 20
+    }
+    pipeline = [
+        project_more,
+        match,
+        group_by_mid,
+        sort_by_count,
+        limit
+    ]
+    cursor = current_collection.aggregate(pipeline, **aggregation_params)
+    results = list(cursor)
+    return results
+
+
 # print('year_total_count: ', year_total_count())
 # print('daily_average_number_of_publishing: ', daily_average_number_of_publishing())
 # print(every_month_publishing())
+print(up_with_the_highest_number_of_publishing())
