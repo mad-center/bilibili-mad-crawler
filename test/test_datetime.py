@@ -17,4 +17,5 @@ print(strftime)
 
 date_begin_str = '2009-07-15'
 date_begin = datetime.strptime(date_begin_str, '%Y-%m-%d')
+print(date_begin)
 print(date_begin.year, date_begin.month, date_begin.day)
