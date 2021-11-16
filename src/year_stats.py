@@ -15,7 +15,7 @@ db = client[db_name]
 current_collection = db[config.subpartition_code]
 crawl_progress_collection = db[config.crawl_progress_collection_name]
 
-year = 2009
+year = 2020
 
 # select
 project = {
@@ -67,7 +67,7 @@ def year_total_count():
     return int(list(cursor)[0]['count'])
 
 
-def daily_average_number_of_publishing():
+def daily_average_number_of_publication():
     result = year_total_count() / __days_of_year(2009)
     return round(result, 3)
 
@@ -111,7 +111,7 @@ def every_month_publishing():
     return ordered_dict
 
 
-def up_with_the_highest_number_of_publishing():
+def up_with_the_highest_number_of_publication():
     project_more = {
         '$project': {
             'aid': '$aid',
@@ -152,7 +152,111 @@ def up_with_the_highest_number_of_publishing():
     return results
 
 
+def publication_with_the_highest_number_of(criterion='view'):
+    project_more = {
+        '$project': {
+            'aid': '$aid',
+            criterion: f'$stat.{criterion}',
+            'pubdate_str': {
+                '$toDate': {
+                    '$multiply': ["$pubdate", 1000]
+                }
+            }
+        }
+    }
+    sort_by_what = {
+        '$sort': {
+            criterion: -1
+        }
+    }
+    limit = {
+        '$limit': 20
+    }
+    pipeline = [
+        project_more,
+        match,
+        sort_by_what,
+        limit
+    ]
+    cursor = current_collection.aggregate(pipeline, **aggregation_params)
+    results = list(cursor)
+    return results
+
+
+def copyright_total_count(copyright=1):
+    project_more = {
+        '$project': {
+            'copyright': '$copyright',
+            'pubdate_str': {
+                '$toDate': {
+                    '$multiply': ["$pubdate", 1000]
+                }
+            }
+        }
+    }
+    group_by_month = {
+        '$group': {
+            '_id': '$copyright',
+            '_count': {
+                '$sum': 1
+            }
+        }
+    }
+    pipeline = [
+        project_more,
+        match,
+        group_by_month,
+    ]
+    cursor = current_collection.aggregate(pipeline, **aggregation_params)
+    results = list(cursor)
+
+    dict = {}
+    for idx, result in enumerate(results):
+        dict[result['_id']] = result['_count']
+
+    return dict.get(copyright, 0)
+
+
+def cooperation_total_count():
+    match_cooperation = {
+        '$match': {
+            # TODO not work
+            'state': {
+                '$eq': 0
+            }
+        }
+    }
+    count = {"$count": "count"}
+    pipeline = [
+        project,
+        match,
+        match_cooperation,
+        count
+    ]
+    cursor = current_collection.aggregate(pipeline, **aggregation_params)
+    results = list(cursor)
+    return results
+
+
 # print('year_total_count: ', year_total_count())
-# print('daily_average_number_of_publishing: ', daily_average_number_of_publishing())
+# print('daily_average_number_of_publication: ', daily_average_number_of_publication())
 # print(every_month_publishing())
-print(up_with_the_highest_number_of_publishing())
+
+# print(publication_with_the_highest_number_of(criterion='view'))
+# print(publication_with_the_highest_number_of(criterion='danmaku'))
+# print(publication_with_the_highest_number_of(criterion='reply'))
+# print(publication_with_the_highest_number_of(criterion='favorite'))
+# print(publication_with_the_highest_number_of(criterion='coin'))
+# print(publication_with_the_highest_number_of(criterion='share'))
+# print(publication_with_the_highest_number_of(criterion='like'))
+
+# copyright 1：原创 2：转载
+# original_count = copyright_total_count(copyright=1)
+# reproduce_count = copyright_total_count(copyright=2)
+# total_count = year_total_count()
+# print('(copyright=1): ', original_count)
+# print('(copyright=2): ', reproduce_count)
+# print('(copyright=1) percent: ', f'{original_count / total_count :.0%}')
+# print('(copyright=2) percent: ', f'{reproduce_count / total_count:.0%}')
+
+print(cooperation_total_count())

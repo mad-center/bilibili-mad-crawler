@@ -1,0 +1,262 @@
+[
+  {
+    '_id': ObjectId(
+    '618a687a108fbaa792d98a28'
+    ),
+    'aid': 897,
+    'view': 173904,
+    'pubdate_str': datetime.datetime(2009,
+    12,
+    6,
+    17,
+    23,
+    24)
+  },
+  {
+    '_id': ObjectId(
+    '618a687a108fbaa792d98a3e'
+    ),
+    'aid': 138,
+    'view': 27851,
+    'pubdate_str': datetime.datetime(2009,
+    7,
+    15,
+    7,
+    12,
+    48)
+  },
+  {
+    '_id': ObjectId(
+    '618a687a108fbaa792d98a36'
+    ),
+    'aid': 550,
+    'view': 19073,
+    'pubdate_str': datetime.datetime(2009,
+    9,
+    20,
+    10,
+    13,
+    7)
+  },
+  {
+    '_id': ObjectId(
+    '618a687a108fbaa792d98a32'
+    ),
+    'aid': 650,
+    'view': 16691,
+    'pubdate_str': datetime.datetime(2009,
+    10,
+    14,
+    15,
+    9,
+    35)
+  },
+  {
+    '_id': ObjectId(
+    '618a687a108fbaa792d98a34'
+    ),
+    'aid': 576,
+    'view': 15248,
+    'pubdate_str': datetime.datetime(2009,
+    9,
+    24,
+    7,
+    23,
+    30)
+  },
+  {
+    '_id': ObjectId(
+    '618a687a108fbaa792d98a38'
+    ),
+    'aid': 526,
+    'view': 14416,
+    'pubdate_str': datetime.datetime(2009,
+    9,
+    18,
+    14,
+    54,
+    36)
+  },
+  {
+    '_id': ObjectId(
+    '618a687a108fbaa792d98a3d'
+    ),
+    'aid': 219,
+    'view': 13960,
+    'pubdate_str': datetime.datetime(2009,
+    7,
+    21,
+    14,
+    1,
+    15)
+  },
+  {
+    '_id': ObjectId(
+    '618a687a108fbaa792d98a39'
+    ),
+    'aid': 517,
+    'view': 12483,
+    'pubdate_str': datetime.datetime(2009,
+    9,
+    17,
+    5,
+    31,
+    21)
+  },
+  {
+    '_id': ObjectId(
+    '618a687a108fbaa792d98a2b'
+    ),
+    'aid': 866,
+    'view': 11803,
+    'pubdate_str': datetime.datetime(2009,
+    11,
+    29,
+    9,
+    17,
+    40)
+  },
+  {
+    '_id': ObjectId(
+    '618a687a108fbaa792d98a3c'
+    ),
+    'aid': 235,
+    'view': 11721,
+    'pubdate_str': datetime.datetime(2009,
+    7,
+    26,
+    11,
+    31,
+    3)
+  },
+  {
+    '_id': ObjectId(
+    '618a687a108fbaa792d98a2f'
+    ),
+    'aid': 664,
+    'view': 11150,
+    'pubdate_str': datetime.datetime(2009,
+    10,
+    16,
+    17,
+    49,
+    57)
+  },
+  {
+    '_id': ObjectId(
+    '618a687a108fbaa792d98a30'
+    ),
+    'aid': 656,
+    'view': 10090,
+    'pubdate_str': datetime.datetime(2009,
+    10,
+    15,
+    15,
+    35,
+    50)
+  },
+  {
+    '_id': ObjectId(
+    '618a687a108fbaa792d98a37'
+    ),
+    'aid': 528,
+    'view': 9998,
+    'pubdate_str': datetime.datetime(2009,
+    9,
+    18,
+    15,
+    8,
+    53)
+  },
+  {
+    '_id': ObjectId(
+    '618a687a108fbaa792d98a2e'
+    ),
+    'aid': 801,
+    'view': 9010,
+    'pubdate_str': datetime.datetime(2009,
+    11,
+    14,
+    14,
+    59,
+    4)
+  },
+  {
+    '_id': ObjectId(
+    '618a687a108fbaa792d98a3a'
+    ),
+    'aid': 323,
+    'view': 6804,
+    'pubdate_str': datetime.datetime(2009,
+    8,
+    25,
+    15,
+    25,
+    26)
+  },
+  {
+    '_id': ObjectId(
+    '618a687a108fbaa792d98a3b'
+    ),
+    'aid': 309,
+    'view': 6654,
+    'pubdate_str': datetime.datetime(2009,
+    8,
+    23,
+    4,
+    52,
+    4)
+  },
+  {
+    '_id': ObjectId(
+    '618a687a108fbaa792d98a2d'
+    ),
+    'aid': 804,
+    'view': 6086,
+    'pubdate_str': datetime.datetime(2009,
+    11,
+    15,
+    13,
+    43,
+    33)
+  },
+  {
+    '_id': ObjectId(
+    '618a687a108fbaa792d98a2c'
+    ),
+    'aid': 859,
+    'view': 5629,
+    'pubdate_str': datetime.datetime(2009,
+    11,
+    29,
+    5,
+    18,
+    4)
+  },
+  {
+    '_id': ObjectId(
+    '618a687a108fbaa792d98a29'
+    ),
+    'aid': 891,
+    'view': 5376,
+    'pubdate_str': datetime.datetime(2009,
+    12,
+    6,
+    16,
+    28,
+    51)
+  },
+  {
+    '_id': ObjectId(
+    '618a687a108fbaa792d98a2a'
+    ),
+    'aid': 890,
+    'view': 4681,
+    'pubdate_str': datetime.datetime(2009,
+    12,
+    6,
+    16,
+    24,
+    16)
+  }
+]
