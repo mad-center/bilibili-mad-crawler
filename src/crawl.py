@@ -267,13 +267,12 @@ def single_crawl_by_page():
 
 def single_crawl_by_date_range():
     # stub
-    print()
+    pass
 
 
 def single_crawl_by_date():
     # stub
-    date_begin = earliest_video_date()
-    print(date_begin)
+    pass
 
 
 def multi_crawl_by_page_init_progress(page_count):

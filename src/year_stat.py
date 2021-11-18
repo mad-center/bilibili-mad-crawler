@@ -8,7 +8,7 @@ import pymongo
 from bson import json_util
 
 
-class MadStat:
+class YearStat:
     def __init__(self, config, year):
         # db config
         self.db_name = config.db_name if config.db_name else 'bilibili'
