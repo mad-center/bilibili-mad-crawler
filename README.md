@@ -28,8 +28,10 @@ bilibili 分区视频的爬虫设计与实现。| A crawler design and implement
 ## 统计
 
 - [x] 年度MAD总投稿量 => number
+- [ ] 年度MADer总数 => number
+- [ ] 年度MAD投稿数量分段区间 => result {}
 - [x] 年度MAD日均投稿数 => number
-- [x] 年度每个月的MAD投稿数量 => result{}
+- [x] 年度每个月的MAD投稿数量 => result {}
 - [x] 年度MAD投稿数最高的up TOP 20 => result[]
 - [x] 年度MAD稿件播放量TOP 20 => result[]
 - [x] 年度MAD稿件弹幕数TOP 20 => result[]

@@ -7,6 +7,8 @@ from pathlib import Path
 import pymongo
 from bson import json_util
 
+# TODO: refactor. create mongo view before doing stats
+# see also: https://www.tutorialspoint.com/creating-views-in-mongodb
 
 class YearStat:
     def __init__(self, config, year):
