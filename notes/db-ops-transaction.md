@@ -2,7 +2,7 @@
 
 ## ~~自身实现~~
 
-> two-phase commit
+> 分布式系统可以考虑 two-phase commit，这里还是考虑为单机模式。
 
 ``` python
 upsert_to_db(data) and upsert_mad_crawler_page()
