@@ -123,10 +123,11 @@ def upsert_archives(data, log=False):
 
 
 def fetch_page(url, retry_max=3, timeout=10):
-    retry_count = 0
-    retry_max = retry_max
+    current_num_of_request = 0
 
-    while retry_count <= retry_max:
+    # MAX total request count = original 1 request + retry_max
+    # for example: if retry_max=3, MAX total request count will be 1 + 3 = 4
+    while current_num_of_request <= retry_max:
         try:
             headers = request_headers(referer)
             r = requests.get(url, headers, timeout=timeout)
@@ -139,9 +140,8 @@ def fetch_page(url, retry_max=3, timeout=10):
         except Exception as e:
             print('ERROR: fetch_page', e)
             time.sleep(3)
-
-            retry_count += 1
-            print('fetch_page retry count: ', retry_count)
+            current_num_of_request += 1
+            print('fetch_page retry count: ', current_num_of_request)
 
     return None
 
